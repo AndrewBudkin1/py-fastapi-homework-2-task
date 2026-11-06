@@ -91,11 +91,14 @@ async def delete_movie(movie_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
+from pydantic import ValidationError
+
+
 @router.patch("/movies/{movie_id}/")
 async def update_movie(
-        movie_id: int,
-        movie_data: MovieUpdateSchema,
-        db: AsyncSession = Depends(get_db),
+    movie_id: int,
+    movie_data: dict,                       # приймаємо сирий dict, не схему
+    db: AsyncSession = Depends(get_db),
 ):
     movie = await db.scalar(
         select(MovieModel).where(MovieModel.id == movie_id)
@@ -106,7 +109,15 @@ async def update_movie(
             detail="Movie with the given ID was not found."
         )
 
-    update_data = movie_data.model_dump(exclude_unset=True)
+    try:
+        validated = MovieUpdateSchema(**movie_data)
+    except ValidationError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid input data."
+        )
+
+    update_data = validated.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(movie, field, value)
 
