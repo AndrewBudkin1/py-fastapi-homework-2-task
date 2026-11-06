@@ -4,6 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from pydantic import ValidationError
 
 from database import get_db, MovieModel
 from database.models import CountryModel, GenreModel, ActorModel, LanguageModel
@@ -91,14 +92,11 @@ async def delete_movie(movie_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-from pydantic import ValidationError
-
-
 @router.patch("/movies/{movie_id}/")
 async def update_movie(
-    movie_id: int,
-    movie_data: dict,                       # приймаємо сирий dict, не схему
-    db: AsyncSession = Depends(get_db),
+        movie_id: int,
+        movie_data: dict,  # приймаємо сирий dict, не схему
+        db: AsyncSession = Depends(get_db),
 ):
     movie = await db.scalar(
         select(MovieModel).where(MovieModel.id == movie_id)
